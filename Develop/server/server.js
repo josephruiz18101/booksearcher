@@ -1,33 +1,24 @@
 const express = require('express');
 const { ApolloServer } = require('apollo-server-express');
-const { typeDefs, resolvers } = require('./schemas');
-const mongoose = require('mongoose');
-const path = require('path');
+const typeDefs = require('./schemas/typeDefs');
+const resolvers = require('./schemas/resolvers');
 
 const app = express();
-
-// Set up Apollo Server
 const server = new ApolloServer({
   typeDefs,
   resolvers,
 });
 
-// Apply Apollo server middleware to Express app
-server.applyMiddleware({ app });
+// Define an async function to start the Apollo server and apply middleware
+const startServer = async () => {
+  await server.start(); // Wait for Apollo Server to start
+  server.applyMiddleware({ app }); // Apply the Apollo Server middleware to the app
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost/book-search', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+  // Now, start the Express server
+  app.listen({ port: 3001 }, () =>
+    console.log(`Server running at http://localhost:3001${server.graphqlPath}`)
+  );
+};
 
-// Serve static assets if in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/build')));
-}
+startServer(); // Call the async function to start the server
 
-// Define the port and start the server
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}${server.graphqlPath}`);
-});
